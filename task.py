@@ -1,17 +1,16 @@
 import tkinter as tk
-from tkinter import PhotoImage, Label, Entry, Button, simpledialog
-from os import system, name
+from tkinter import PhotoImage, Label, Entry, Button, simpledialog, Text, END
 import csv
 
 class TaskBase:
     def __init__(self, task_id, description, task_type):
         # construtor da classe Task
-        self.id = task_id #**o ID é atribuido posteriormente
+        self.id = task_id #o ID é atribuido posteriormente
         self.type = task_type
         self.description = description
         self.completed = False
 
-    #metodo abstrato
+    # metodo abstrato
     def mark_as_completed(self):
         # metodo para marcar a tarefa como concluida
         self.completed = True
@@ -21,8 +20,9 @@ class Task(TaskBase): #classe task(default) herda da classe TaskBase
         super().__init__(task_id, description, 'D')
 
     def mark_as_completed(self):
-            super().mark_as_completed()
-            print(f"Task ID:{self.id} marked as completed.")
+        super().mark_as_completed()
+        #print(f"Task ID:{self.id} marked as completed.")
+        return 1 #tasktype
 
 class MeetingTask(TaskBase):
     def __init__(self, task_id, description):
@@ -30,7 +30,8 @@ class MeetingTask(TaskBase):
 
     def mark_as_completed(self):
         super().mark_as_completed()
-        print(f"MeetingTask ID:{self.id} marked as completed.")
+        #print(f"MeetingTask ID:{self.id} marked as completed.")
+        return 2 #tasktype
 
 class ProjectTask(TaskBase):
     def __init__(self, task_id, description):
@@ -38,7 +39,8 @@ class ProjectTask(TaskBase):
 
     def mark_as_completed(self):
             super().mark_as_completed()
-            print(f"ProjectTask ID:{self.id} marked as completed.")
+            #print(f"ProjectTask ID:{self.id} marked as completed.")
+            return 3 #tasktype
 
 class AssignmentTask(TaskBase):
     def __init__(self, task_id, description):
@@ -46,36 +48,37 @@ class AssignmentTask(TaskBase):
 
     def mark_as_completed(self):
         super().mark_as_completed()
-        print(f"AssignmentTask ID:{self.id} marked as completed.")
+        #print(f"AssignmentTask ID:{self.id} marked as completed.")
+        return 4 #tasktype
 
 class TaskList:
     def __init__(self):
-        # construtor da classe TaskList
+        # Construtor da classe TaskList
         self.tasks = []
-        #** ler tasks de ficheiro .csv
+        # Ler tasks de ficheiro .csv
         self.load_tasks_from_file()
-        self.next_task_id = len(self.tasks) + 1 #** Inicializa o próximo ID
+        self.next_task_id = len(self.tasks) + 1 # Inicializa o próximo ID
 
     def add_task(self, task):
-        #ordenar a lista de tarefas com base nos IDs
+        # Ordenar a lista de tarefas com base nos IDs
         self.reorganize_ids()
 
-        #**obter o próximo ID com base na lista ordenada
+        # Obter o próximo ID com base na lista ordenada
         if self.tasks:#verificar se a lista nao esta vazia
             self.next_task_id = self.tasks[-1].id + 1 #self.tasks[-1] refere se à ultima tarefa da lista ordenada(ordenada no metodo reorganize_ids)
         else:
             self.next_task_id = 1
         
-        #**Atribui o proximo ID à tarefa
+        # Atribui o proximo ID à tarefa
         task.id = self.next_task_id  
         
         # Metodo para adicionar uam tarefa à lista de tarefas
         self.tasks.append(task)
         
-        #** Atualiza o proximo ID
+        # Atualiza o proximo ID
         self.next_task_id += 1 
 
-        #**salvar/escrever no ficheiro .csv
+        # Salvar/Escrever no ficheiro .csv
         self.save_tasks_to_file()
 
     def add_task_with_type(self, task_type, description):
@@ -93,7 +96,6 @@ class TaskList:
         
         #Atualizar o tipo da tarefa
         new_task.type = 'D' if task_type == 1 else 'M' if task_type == 2 else 'P' if task_type == 3 else 'A'
-
         self.add_task(new_task)
 
     #metodo para eliminar tasks
@@ -105,17 +107,12 @@ class TaskList:
     #reorganizar a lista, para estar devidamente enumerada
         #os ids das tarefas por vezes mudam de valor, para que a lista esteja ordenada...
     def reorganize_ids(self):
-        #**ordenar a lista de tarefas com base nos IDs
+        # Ordenar a lista de tarefas com base nos IDs
         self.tasks.sort(key=lambda task: task.id)
 
-        #**atualizar os IDS de acordo com a ordem na lista
+        # Atualizar os IDS de acordo com a ordem na lista
         for index, task in enumerate(self.tasks, start=1):
             task.id = index
-
-    def view_tasks(self):
-        # metodo para exibir as tarefas na lista (imprime no terminal)
-        for task in self.tasks:
-            print(f"{task.id}[{task.type}]. {task.description} {'(Completed)' if task.completed else ''}")
 
     #ler tasks de ficheiro .csv (comma sepparated values)
     def load_tasks_from_file(self):
@@ -152,14 +149,19 @@ class TaskList:
             writer.writeheader()
             for task in self.tasks:
                 writer.writerow({'ID': task.id, 'Type': task.type, 'Description': task.description, 'Completed': int(task.completed)})
+
+############GUI#############
 class GUI:
     def __init__(self, master):
-############GUI#############
         #Construtor da classe GUI, recebe um objeto Tkinter como argumento
         self.master = master
         self.master.title("To-Do List Manager")
-        self.master.geometry("400x650+400+100")
+        self.master.geometry("400x550+400+100")
         self.master.resizable(False, False)
+
+        #Janela de output
+        self.output = Text(master, height=20, width=40, bg = "PaleGreen1", state="disabled")
+        self.output.grid(row=2, columnspan=2) #adicionar o widget de texto a janela principal
 
         # Icon da aplicacao
         self.image_icon = PhotoImage(file="Image/task.png")
@@ -183,33 +185,54 @@ class GUI:
 
         # Lista de tarefas
         self.task_list = TaskList()
+        self.view_tasks() #imprimir lista de tarefas quando o programa inicia
 
         # Input/entrada de texto
         self.description_entry = Entry(self.master, width=40)
         self.description_entry.grid(row=1, column=0, padx=10, pady=10)
 
-        # Botoes
+        # Botao de adicionar tarefas
         self.add_button = Button(self.master, text="Add Task", command=self.add_task)
         self.add_button.grid(row=1, column=1, padx=10, pady=10)
 
+        # Botao para ver lista de tarefas
         self.view_button = Button(self.master, text="View Tasks", command=self.view_tasks)
-        self.view_button.grid(row=2, column=0, columnspan=2, pady=10)
-
-         # Botão para marcar tarefa como concluída
-        self.mark_completed_button = Button(self.master, text="Mark as Completed", command=self.mark_task_as_completed)
-        self.mark_completed_button.grid(row=3, column=0, columnspan=2, pady=10)
-
-        #**Botão para eliminar tasks
-        self.delete_button = Button(self.master, text="Delete Task", command=self.delete_task)
-        self.delete_button.grid(row=4, column=0, columnspan=2, pady=10)
-############GUI#############
-    
-    #metodos
+        #self.view_button.grid(row=3,column=0, pady=10)
+        self.view_button.place(x=50, y=460)
         
-    def add_task(self):
-        #metodo para adicionar uma nova tarefa
-        #esta é parte mais essencial do programa
+        # Botão para marcar tarefa como concluída
+        self.mark_completed_button = Button(self.master, text="Mark as Completed", command=self.mark_task_as_completed)
+        #self.mark_completed_button.grid(row=3,column=1, pady=10)
+        self.mark_completed_button.place(x=140, y=460)
+        
+        # Botão para eliminar tasks
+        self.delete_button = Button(self.master, text="Delete Task", command=self.delete_task)
+        #self.delete_button.grid(row=3,column=2, pady=10)
+        self.delete_button.place(x=280, y=460)
 
+        # Autor label
+        self.author_info_label = Label(self.master, text="Feito por aluno José Barroso, nº2104846")
+        self.author_info_label.place(x=0, y = 530)
+    
+    # Metodo para limpar a janela de output
+    def clear_output(self):
+        # Tornar a caixa de texto editável temporariamente
+        self.output.config(state="normal")
+        self.output.delete(1.0, "end") #limpar a janela de output
+        # Tornar a caixa de texto não editável novamente
+        self.output.config(state="disabled")
+
+    # Metodo para permitir output na janela de texto
+    def add_output_text(self, text):
+        # Tornar a caixa de texto editável temporariamente
+        self.output.config(state="normal")
+        # Adicionar o texto desejado à caixa de texto
+        self.output.insert(END, text + "\n")
+        # Tornar a caixa de texto não editável novamente
+        self.output.config(state="disabled")
+        
+    # Metodo para adicionar tarefas à lista    
+    def add_task(self):
         #obter a descricao da tarefa da caixa de entrada
         description = self.description_entry.get()
 
@@ -220,57 +243,81 @@ class GUI:
             # Criar e adicionar a nova tarefa à lista de tarefas no objeto TaskList
             self.task_list.add_task_with_type(task_type, description)
             if task_type == 1:
-                print(f"Default task added.")
+                self.clear_output()
+                self.add_output_text(f"Default task added.")#print(f"Default task added.")
             elif task_type == 2:
-                print(f"Meeting task added.")
+                self.clear_output()
+                self.add_output_text(f"Meeting task added.") #print(f"Meeting task added.")
             elif task_type == 3:
-                print(f"Project task added.")
+                self.clear_output()
+                self.add_output_text(f"Project task added." ) #print(f"Project task added.")
             elif task_type == 4:
-                print(f"Assignment task added.")
+                self.clear_output()
+                self.add_output_text(f"Assignment task added.")#print(f"Assignment task added.")
         except ValueError as e:
-            print(f"Error: {e}")
+            #print(f"Error: {e}")
+            self.clear_output()
+            self.add_output_text(f"Error: {e}")
         #limpar a caixa de entrada apos uma tarefa ter sido adicionada,
         #para se poder escrever(input) e adicionar novas tarefas
-        self.description_entry.delete(0, tk.END)
+        self.description_entry.delete(0, END)
 
-    #Eliminar tasks
+    # Metodo para eliminar tasks
     def delete_task(self):
+        # Dialog para obter o ID da tarefa a ser marcada como concluída
         task_id_to_delete = simpledialog.askinteger("Delete Task", "Enter the ID of the task to be deleted:")
+
         if task_id_to_delete is not None:
-            self.task_list.delete_task(task_id_to_delete)
-            print(f"Task ID: {task_id_to_delete} deleted.")
+            for task in self.task_list.tasks:
+                if task.id == task_id_to_delete:
+                    self.task_list.delete_task(task_id_to_delete)
+                    self.clear_output()
+                    #print(f"Task ID: {task_id_to_delete} deleted.")
+                    self.add_output_text(f"Task ID: {task_id_to_delete} was deleted.")
+                    return
+            # Task Id nao foi encontrado
+            self.clear_output()
+            self.add_output_text(f"Task ID:{task_id_to_delete} not found.")#print(f"Task ID:{task_id_to_delete} not found.")
 
+    # Metodo para imprimir a lista de tarefas
     def view_tasks(self):
-        #clear screen(terminal)
-        self.clear_terminal()
+        # Método para limpar a janela de output
+        self.clear_output()
         #display no terminal da lista de tarefas
-        self.task_list.view_tasks()
+        # metodo para exibir as tarefas na lista (imprime no terminal)
+        for task in self.task_list.tasks:
+            #print(f"{task.id}[{task.type}]. {task.description} {'(Completed)' if task.completed else ''}")
+            self.add_output_text(f"{task.id}[{task.type}]. {task.description} {'(Completed)' if task.completed else ''}")
+    
+    # Metodo para marcar uma tarefa como concluída
+    def mark_task_as_completed(self): 
 
-    def mark_task_as_completed(self):
-        # Método para marcar uma tarefa como concluída
-
-        # Diálogo para obter o ID da tarefa a ser marcada como concluída
+        # Dialog para obter o ID da tarefa a ser marcada como concluída
         task_id_to_mark = simpledialog.askinteger("Mark Task as Completed", "Enter the ID of the task to be marked as completed:")
 
         #marcar Task como completa
         if task_id_to_mark is not None:
             for task in self.task_list.tasks:
                 if task.id == task_id_to_mark:
-                    task.mark_as_completed()
-                    self.task_list.save_tasks_to_file()  #** Guardar no ficheiro .csv a alteracao de que a task foi completada.
+                    task_completed_type = task.mark_as_completed()
+                    if task_completed_type == 1:
+                        self.clear_output()
+                        self.add_output_text(f"Task ID:{task.id} marked as completed.")#print(f"Default task added.")
+                    elif task_completed_type == 2:
+                        self.clear_output()
+                        self.add_output_text(f"MeetingTask ID:{task.id} marked as completed.") #print(f"Meeting task added.")
+                    elif task_completed_type == 3:
+                        self.clear_output()
+                        self.add_output_text(f"ProjectTask ID:{task.id} marked as completed." ) #print(f"Project task added.")
+                    elif task_completed_type == 4:
+                        self.clear_output()
+                        self.add_output_text(f"AssignmentTask ID:{task.id} marked as completed.")#print(f"Assignment task added.")
+                    self.task_list.save_tasks_to_file()  # Guardar no ficheiro .csv a alteracao de que a task foi completada.
                     return
             
             # Task Id nao foi encontrado
-            print(f"Task ID:{task_id_to_mark} not found.")
-
-    def clear_terminal(self):
-        # Limpar o terminal (Unix/Linux/MacOS)
-        if name == 'posix':
-            _ = system('clear')
-        # Limpar o terminal (Windows)
-        elif name == 'nt':
-            _ = system('cls')
-
+            self.clear_output()
+            self.add_output_text(f"Task ID:{task_id_to_mark} not found.")#print(f"Task ID:{task_id_to_mark} not found.")
 
 #main
 if __name__ == "__main__":
